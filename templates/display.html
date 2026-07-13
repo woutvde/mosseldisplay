@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Klantenscherm - Klaar om op te halen</title>
+    <style>
+        body {
+            font-family: 'Helvetica', sans-serif;
+            background-color: black;
+            color: white;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+        h1 {
+            text-align: center;
+            font-size: 4rem;
+            margin-bottom: 50px;
+            text-transform: uppercase;
+        }
+        .grid-container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+            align-content: start;
+        }
+        .order-number {
+            color: yellow;
+            font-size: 8rem;
+            font-weight: bold;
+            text-align: center;
+            background-color: #1a1a1a;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(255, 255, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Deze bestellingen zijn klaar om op te halen</h1>
+    <div class="grid-container" id="displayGrid"></div>
+
+    <script>
+        const displayGrid = document.getElementById('displayGrid');
+        let lastOrders = [];
+
+        async function fetchOrders() {
+            try {
+                const res = await fetch('/api/orders');
+                const orders = await res.json();
+                
+                // Only redraw DOM if the array actually changed
+                if (JSON.stringify(orders) !== JSON.stringify(lastOrders)) {
+                    displayGrid.innerHTML = '';
+                    orders.forEach(order => {
+                        const div = document.createElement('div');
+                        div.className = 'order-number';
+                        div.textContent = order;
+                        displayGrid.appendChild(div);
+                    });
+                    lastOrders = orders;
+                }
+            } catch (error) {
+                console.error("Connection lost...");
+            }
+        }
+
+        // Poll every 2 seconds
+        setInterval(fetchOrders, 2000);
+        fetchOrders();
+    </script>
+</body>
+</html>
