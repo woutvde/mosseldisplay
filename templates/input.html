@@ -1,23 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Personeel Invoer - Bestellingen Tracker</title>
     <style>
-        body {
-            font-family: 'Helvetica', sans-serif;
-            background-color: #f0f0f0;
-            margin: 0;
-            display: flex;
+        body { 
+            background-color: #0f172a; 
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            margin: 0; 
+            display: flex; 
             height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
+
+        /* Persistent Control Header derived from bingosoft */
+        .theme-bar {
+            position: fixed;
+            top: 20px;
+            right: 480px; /* Positioned clearly left of the side control panel */
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(8px);
+            padding: 8px 18px;
+            border-radius: 30px;
+            border: 1px solid #334155;
+            font-size: 13px;
+            font-weight: 600;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        .theme-control { display: flex; align-items: center; gap: 8px; color: #94a3b8; }
+        .theme-toggle-btn {
+            background: #0f172a; border: 1px solid #334155; color: #cbd5e1;
+            padding: 4px 12px; border-radius: 15px; cursor: pointer;
+            font-size: 11px; font-weight: bold; text-transform: uppercase;
+            transition: all 0.2s ease;
+        }
+        .theme-toggle-btn:hover { border-color: #38bdf8; color: #38bdf8; }
+
         .left-panel {
             flex: 1;
             padding: 40px;
             overflow-y: auto;
             display: flex;
             gap: 40px;
+            margin-top: 50px;
         }
         .column-section {
             flex: 1;
@@ -26,112 +58,161 @@
         }
         .right-panel {
             width: 450px;
-            background-color: #e8e8e8;
-            border-left: 2px solid #ccc;
+            background-color: #1e293b;
+            border-left: 1px solid #334155;
             padding: 40px;
             display: flex;
             flex-direction: column;
             align-items: center;
             position: relative;
+            box-sizing: border-box;
+            justify-content: center;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
-        h2 { font-size: 1.8rem; color: #333; margin-top: 0; }
         
-        /* Numpad & Input */
+        h2 { font-size: 1.5rem; font-weight: 700; color: #94a3b8; margin-top: 0; text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* Modernized Inputs & Control Keypads */
         #orderInput {
             font-size: 4rem;
+            font-weight: 800;
             text-align: center;
             width: 100%;
             margin-bottom: 30px;
             padding: 10px;
             box-sizing: border-box;
+            background: #0f172a;
+            color: #f8fafc;
+            border: 2px solid #334155;
+            border-radius: 12px;
+            transition: all 0.3s ease;
         }
         .numpad {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
+            gap: 12px;
             width: 100%;
         }
         .btn {
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: bold;
-            padding: 25px 0;
+            padding: 20px 0;
             cursor: pointer;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            background-color: white;
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            color: #cbd5e1;
+            border-radius: 10px;
+            transition: all 0.2s;
         }
-        .btn:active { background-color: #ddd; }
-        .btn-clear { background-color: #ff9999; }
-        .btn-enter { background-color: #99ff99; }
+        .btn:hover { background-color: #334155; color: white; }
+        .btn-clear { background-color: #7f1d1d; color: #fca5a5; border-color: #991b1b; }
+        .btn-clear:hover { background-color: #991b1b; }
+        .btn-enter { background-color: #064e3b; color: #6ee7b7; border-color: #065f46; }
+        .btn-enter:hover { background-color: #065f46; }
         
-        /* Active Orders Grid Setup */
+        /* Grid Layout Configuration */
         .orders-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
             gap: 15px;
             margin-top: 10px;
         }
         .order-btn {
-            font-size: 2rem;
-            font-weight: bold;
+            font-size: 1.8rem;
+            font-weight: 800;
             padding: 20px 10px;
             border: 2px solid;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             text-align: center;
+            background: #1e293b;
+            transition: all 0.2s ease;
         }
-        .preparing-btn {
-            background-color: #ffe6cc;
-            border-color: #f9c29d;
-            color: #b35c00;
-        }
-        .preparing-btn:hover { background-color: #ffd8b3; }
+        .order-btn:hover { transform: translateY(-2px); }
         
-        .ready-btn {
-            background-color: #ccffcc;
-            border-color: #99ff99;
-            color: #006600;
-        }
-        .ready-btn:hover { background-color: #b3ffb3; }
+        .preparing-btn { border-color: #b45309; color: #fbbf24; }
+        .preparing-btn:hover { background: #78350f; }
+        
+        .ready-btn { border-color: #047857; color: #34d399; }
+        .ready-btn:hover { background: #064e3b; }
 
-        /* POS Blockout Layer */
+        /* Full Height POS Blockout Layer */
         .pos-overlay {
             display: none;
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(220, 220, 220, 0.92);
-            color: #555;
-            font-size: 2rem;
-            font-weight: bold;
+            background-color: rgba(15, 23, 42, 0.95);
+            color: #94a3b8;
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
             text-align: center;
             justify-content: center;
             align-items: center;
             z-index: 10;
-            padding: 30px;
+            padding: 40px;
             box-sizing: border-box;
-            border-left: 1px solid #bbb;
         }
+
+        /* ================= LIGHT MODE OVERRIDES ================= */
+        body.light-theme { background-color: #f8fafc; color: #0f172a; }
+        body.light-theme .theme-bar {
+            background: rgba(255, 255, 255, 0.85); border-color: #cbd5e1; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        body.light-theme .theme-toggle-btn { background: #f1f5f9; border-color: #cbd5e1; color: #334155; }
+        body.light-theme .theme-toggle-btn:hover { border-color: #0284c7; color: #0284c7; }
+        
+        body.light-theme .right-panel { background-color: #ffffff; border-left-color: #cbd5e1; }
+        body.light-theme #orderInput { background: #ffffff; color: #0f172a; border-color: #cbd5e1; }
+        
+        body.light-theme .btn { background-color: #f1f5f9; border-color: #cbd5e1; color: #334155; }
+        body.light-theme .btn:hover { background-color: #e2e8f0; color: #0f172a; }
+        body.light-theme .btn-clear { background-color: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+        body.light-theme .btn-clear:hover { background-color: #fca5a5; }
+        body.light-theme .btn-enter { background-color: #d1fae5; color: #065f46; border-color: #a7f3d0; }
+        body.light-theme .btn-enter:hover { background-color: #a7f3d0; }
+
+        body.light-theme .order-btn { background: #ffffff; }
+        body.light-theme .preparing-btn { border-color: #f59e0b; color: #d97706; }
+        body.light-theme .preparing-btn:hover { background: #fef3c7; }
+        body.light-theme .ready-btn { border-color: #10b981; color: #059669; }
+        body.light-theme .ready-btn:hover { background: #d1fae5; }
+        
+        body.light-theme .pos-overlay { background-color: rgba(255, 255, 255, 0.96); color: #64748b; }
     </style>
 </head>
 <body>
 
+    <!-- TOP DIRECTIONAL CONTROL TOOLBAR -->
+    <div class="theme-bar">
+        <div class="theme-control">
+            <span>Invoer paneel:</span>
+            <button onclick="toggleLocalTheme()" id="localThemeBtn" class="theme-toggle-btn">Donker</button>
+        </div>
+        <div class="theme-control">
+            <span>Klantenscherm:</span>
+            <button onclick="toggleRemoteTheme()" id="remoteThemeBtn" class="theme-toggle-btn">Donker</button>
+        </div>
+    </div>
+
     <div class="left-panel">
         <div class="column-section">
-            <h2>Wordt gemaakt:</h2>
+            <h2>Wordt gemaakt</h2>
             <div class="orders-grid" id="preparingOrders"></div>
         </div>
         <div class="column-section">
-            <h2>Klaar voor afhalen:</h2>
+            <h2>Klaar voor afhalen</h2>
             <div class="orders-grid" id="readyOrders"></div>
         </div>
     </div>
 
     <div class="right-panel">
-        <!-- Overlay container elements for POS locks -->
+        <!-- Overlay container blocks keypads on POS interactions -->
         <div class="pos-overlay" id="posOverlay">verbonden aan mosselpos</div>
         
-        <h2>Nieuwe Bestelling:</h2>
+        <h2>Nieuwe Bestelling</h2>
         <input type="text" id="orderInput" readonly>
         
         <div class="numpad">
@@ -155,16 +236,40 @@
         const preparingGrid = document.getElementById('preparingOrders');
         const readyGrid = document.getElementById('readyOrders');
         const posOverlay = document.getElementById('posOverlay');
+        
         let isPosConnected = false;
+        let remoteThemeState = "dark";
 
-        function appendNum(num) { 
-            if (isPosConnected) return;
-            inputField.value += num; 
+        // Local UI storage configuration tracking
+        const savedLocalTheme = localStorage.getItem('input_panel_theme') || 'dark';
+        document.body.classList.toggle('light-theme', savedLocalTheme === 'light');
+        document.getElementById('localThemeBtn').innerText = savedLocalTheme === 'light' ? 'Licht' : 'Donker';
+
+        function toggleLocalTheme() {
+            const isLight = document.body.classList.contains('light-theme');
+            const target = isLight ? 'dark' : 'light';
+            document.body.classList.toggle('light-theme', target === 'light');
+            localStorage.setItem('input_panel_theme', target);
+            document.getElementById('localThemeBtn').innerText = target === 'light' ? 'Licht' : 'Donker';
         }
-        function clearInput() { 
-            if (isPosConnected) return;
-            inputField.value = ''; 
+
+        async function toggleRemoteTheme() {
+            const targetTheme = remoteThemeState === 'dark' ? 'light' : 'dark';
+            try {
+                await fetch('/api/theme', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ theme: targetTheme })
+                });
+                remoteThemeState = targetTheme;
+                document.getElementById('remoteThemeBtn').innerText = targetTheme === 'light' ? 'Licht' : 'Donker';
+            } catch (e) {
+                console.error("Failed syncing dynamic remote themes", e);
+            }
         }
+
+        function appendNum(num) { if (isPosConnected) return; inputField.value += num; }
+        function clearInput() { if (isPosConnected) return; inputField.value = ''; }
 
         document.addEventListener('keydown', (e) => {
             if (isPosConnected) return;
@@ -184,7 +289,6 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ order: orderNum, status: 'preparing' })
             });
-            
             clearInput();
             fetchOrders();
         }
@@ -207,6 +311,9 @@
                 isPosConnected = data.pos_connected;
                 posOverlay.style.display = isPosConnected ? 'flex' : 'none';
                 
+                remoteThemeState = data.display_theme;
+                document.getElementById('remoteThemeBtn').innerText = remoteThemeState === 'light' ? 'Licht' : 'Donker';
+
                 // Render preparing list
                 preparingGrid.innerHTML = '';
                 data.preparing.forEach(order => {

@@ -1,95 +1,141 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Klantenscherm - Status Overzicht</title>
     <style>
-        body {
-            font-family: 'Helvetica', sans-serif;
-            background-color: black;
-            color: white;
+        body { 
+            background-color: #0f172a; /* Deep slate dark-mode */
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             margin: 0;
-            padding: 40px;
+            padding: 5vh 5vw;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            height: 100vh;
             box-sizing: border-box;
+            overflow: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
+
         .display-container {
             display: flex;
             flex: 1;
-            gap: 50px;
+            gap: 5vw;
             overflow: hidden;
         }
+
         .column {
             display: flex;
             flex-direction: column;
         }
-        /* Smaller columns for items being prepared */
+
         .preparing-column {
             flex: 1;
-            border-right: 3px dashed #222;
-            padding-right: 30px;
+            border-right: 2px solid #1e293b;
+            padding-right: 2vw;
+            transition: border-color 0.3s ease;
         }
-        /* Dominant screen ratio space for finished items */
+
         .ready-column {
-            flex: 3;
+            flex: 2.5;
         }
+
         h1 {
-            font-size: 2.2rem;
+            font-size: 24px;
             text-transform: uppercase;
-            margin-bottom: 25px;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
+            margin-bottom: 30px;
+            font-weight: 700;
         }
-        .preparing-column h1 { color: #ff9933; }
-        .ready-column h1 { color: #00ff00; }
+        .preparing-column h1 { color: #64748b; }
+        .ready-column h1 { color: #38bdf8; } /* Glowing cyan theme color */
 
         .grid-container {
             display: grid;
             gap: 20px;
             align-content: start;
         }
+
         .preparing-grid {
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
         }
+
         .ready-grid {
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-            gap: 30px;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 25px;
         }
         
-        .order-number {
-            font-weight: bold;
+        /* Modern chip formatting derived from bingosoft */
+        .order-chip {
+            background: #1e293b;
+            border: 2px solid #334155;
+            font-weight: 800;
             text-align: center;
-            background-color: #111;
-            border-radius: 15px;
-            box-sizing: border-box;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            transition: all 0.3s ease;
         }
-        /* Intentionally sized smaller */
-        .order-number.preparing {
-            color: #ffaa66;
-            font-size: 3.5rem;
-            padding: 15px;
-            border: 2px solid #331f0c;
+
+        .order-chip.preparing {
+            color: #cbd5e1;
+            font-size: 2.5rem;
+            padding: 12px 10px;
         }
-        /* Intentionally sized bigger with highlight accents */
-        .order-number.ready {
-            color: yellow;
-            font-size: 7rem;
-            padding: 20px;
-            box-shadow: 0 0 25px rgba(255, 255, 0, 0.12);
-            border: 2px solid #333300;
+
+        .order-chip.ready {
+            color: #ffffff;
+            font-size: 6rem;
+            padding: 15px 10px;
+            border-color: #38bdf8;
+            text-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+            box-shadow: 0 6px 25px rgba(56, 189, 248, 0.15);
+        }
+
+        /* ================= LIGHT MODE OVERRIDES ================= */
+        body.light-theme {
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        body.light-theme .preparing-column {
+            border-right-color: #cbd5e1;
+        }
+        body.light-theme .preparing-column h1 { color: #94a3b8; }
+        body.light-theme .ready-column h1 { color: #0284c7; }
+        
+        body.light-theme .order-chip {
+            background: #ffffff;
+            border-color: #cbd5e1;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.05);
+        }
+        body.light-theme .order-chip.preparing {
+            color: #334155;
+        }
+        body.light-theme .order-chip.ready {
+            color: #0f172a;
+            border-color: #0284c7;
+            text-shadow: none;
+            box-shadow: 0 6px 20px rgba(2, 132, 199, 0.1);
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.85); }
+            to { opacity: 1; transform: scale(1); }
         }
     </style>
 </head>
 <body>
 
     <div class="display-container">
+        <!-- PREPARING SECTION -->
         <div class="column preparing-column">
             <h1>Wordt gemaakt</h1>
             <div class="grid-container preparing-grid" id="preparingGrid"></div>
         </div>
 
+        <!-- READY SECTION -->
         <div class="column ready-column">
             <h1>Klaar om op te halen</h1>
             <div class="grid-container ready-grid" id="readyGrid"></div>
@@ -106,23 +152,31 @@
                 const res = await fetch('/api/orders');
                 const data = await res.json();
                 
-                const currentStateString = JSON.stringify({p: data.preparing, r: data.ready});
+                // Track state changes to avoid unnecessary DOM refreshes
+                const currentStateString = JSON.stringify({
+                    p: data.preparing, 
+                    r: data.ready, 
+                    t: data.display_theme
+                });
                 
                 if (currentStateString !== lastStateString) {
-                    // Update Preparing Grid UI
+                    // Update remote synchronization theme
+                    document.body.classList.toggle('light-theme', data.display_theme === 'light');
+                    
+                    // Render preparing list
                     preparingGrid.innerHTML = '';
                     data.preparing.forEach(order => {
                         const div = document.createElement('div');
-                        div.className = 'order-number preparing';
+                        div.className = 'order-chip preparing';
                         div.textContent = order;
                         preparingGrid.appendChild(div);
                     });
 
-                    // Update Ready Grid UI
+                    // Render ready list
                     readyGrid.innerHTML = '';
                     data.ready.forEach(order => {
                         const div = document.createElement('div');
-                        div.className = 'order-number ready';
+                        div.className = 'order-chip ready';
                         div.textContent = order;
                         readyGrid.appendChild(div);
                     });
@@ -134,7 +188,7 @@
             }
         }
 
-        setInterval(fetchOrders, 2000);
+        setInterval(fetchOrders, 1000);
         fetchOrders();
     </script>
 </body>

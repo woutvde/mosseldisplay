@@ -2,11 +2,12 @@ from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 
-# In-memory storage for splitting order tracking states
+# In-memory database tracking order states and theme configurations
 order_data = {
     "preparing": [],
     "ready": [],
-    "pos_connected": False
+    "pos_connected": False,
+    "display_theme": "dark"  # Default global display theme state
 }
 
 @app.route('/')
@@ -26,21 +27,18 @@ def handle_orders():
     if request.method == 'POST':
         data = request.get_json() or {}
         order = str(data.get('order', '')).strip()
-        status = data.get('status', 'preparing')  # Default status for new orders
+        status = data.get('status', 'preparing')
         source = data.get('source', '')
         
-        # If order comes from the POS API, lock the numpad out
         if source == 'pos':
             order_data['pos_connected'] = True
             
         if order and order.isdigit():
-            # Clean up duplicates across both lists first
             if order in order_data['preparing']:
                 order_data['preparing'].remove(order)
             if order in order_data['ready']:
                 order_data['ready'].remove(order)
                 
-            # Place order into the appropriate channel
             if status == 'ready':
                 order_data['ready'].append(order)
             else:
@@ -68,5 +66,14 @@ def delete_order(order):
         order_data['ready'].remove(order)
     return jsonify(order_data)
 
+@app.route('/api/theme', methods=['POST'])
+def update_theme():
+    global order_data
+    data = request.get_json() or {}
+    theme = data.get('theme', 'dark')
+    if theme in ['dark', 'light']:
+        order_data['display_theme'] = theme
+    return jsonify(order_data)
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)
