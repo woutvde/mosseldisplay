@@ -26,14 +26,16 @@ def handle_orders():
     global order_data
     if request.method == 'POST':
         data = request.get_json() or {}
-        order = str(data.get('order', '')).strip()
+        # Normalize order numbers to uppercase to ensure POS letters and keypad letters match perfectly
+        order = str(data.get('order', '')).strip().upper()
         status = data.get('status', 'preparing')
         source = data.get('source', '')
         
         if source == 'pos':
             order_data['pos_connected'] = True
             
-        if order and order.isdigit():
+        # Changed .isdigit() to .isalnum() to support formats like a493, b39, c39
+        if order and order.isalnum():
             if order in order_data['preparing']:
                 order_data['preparing'].remove(order)
             if order in order_data['ready']:
@@ -51,6 +53,7 @@ def handle_orders():
 @app.route('/api/orders/<order>/ready', methods=['PUT'])
 def move_to_ready(order):
     global order_data
+    order = order.upper()  # Enforce case safety
     if order in order_data['preparing']:
         order_data['preparing'].remove(order)
         if order not in order_data['ready']:
@@ -60,6 +63,7 @@ def move_to_ready(order):
 @app.route('/api/orders/<order>', methods=['DELETE'])
 def delete_order(order):
     global order_data
+    order = order.upper()  # Enforce case safety
     if order in order_data['preparing']:
         order_data['preparing'].remove(order)
     if order in order_data['ready']:

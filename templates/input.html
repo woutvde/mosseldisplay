@@ -87,9 +87,11 @@
             border-radius: 12px;
             transition: all 0.3s ease;
         }
+        
+        /* Updated layout style to handle a 4-column grid setup neatly */
         .numpad {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 12px;
             width: 100%;
         }
@@ -105,10 +107,11 @@
             transition: all 0.2s;
         }
         .btn:hover { background-color: #334155; color: white; }
-        .btn-clear { background-color: #7f1d1d; color: #fca5a5; border-color: #991b1b; }
+        .btn-clear { background-color: #7f1d1d; color: #fca5a5; border-color: #991b1b; font-size: 1.5rem; }
         .btn-clear:hover { background-color: #991b1b; }
-        .btn-enter { background-color: #064e3b; color: #6ee7b7; border-color: #065f46; }
+        .btn-enter { background-color: #064e3b; color: #6ee7b7; border-color: #065f46; font-size: 1.3rem; }
         .btn-enter:hover { background-color: #065f46; }
+        .btn-alpha { color: #38bdf8; border-color: #1e293b; } /* Custom highlight color for letters */
         
         /* Grid Layout Configuration */
         .orders-grid {
@@ -173,6 +176,7 @@
         body.light-theme .btn-clear:hover { background-color: #fca5a5; }
         body.light-theme .btn-enter { background-color: #d1fae5; color: #065f46; border-color: #a7f3d0; }
         body.light-theme .btn-enter:hover { background-color: #a7f3d0; }
+        body.light-theme .btn-alpha { color: #0284c7; }
 
         body.light-theme .order-btn { background: #ffffff; }
         body.light-theme .preparing-btn { border-color: #f59e0b; color: #d97706; }
@@ -215,19 +219,27 @@
         <h2>Nieuwe Bestelling</h2>
         <input type="text" id="orderInput" readonly>
         
+        <!-- Expanded Grid layout showing numeric values side by side with tracking IDs -->
         <div class="numpad">
             <button class="btn" onclick="appendNum('7')">7</button>
             <button class="btn" onclick="appendNum('8')">8</button>
             <button class="btn" onclick="appendNum('9')">9</button>
+            <button class="btn btn-alpha" onclick="appendNum('A')">A</button>
+            
             <button class="btn" onclick="appendNum('4')">4</button>
             <button class="btn" onclick="appendNum('5')">5</button>
             <button class="btn" onclick="appendNum('6')">6</button>
+            <button class="btn btn-alpha" onclick="appendNum('B')">B</button>
+            
             <button class="btn" onclick="appendNum('1')">1</button>
             <button class="btn" onclick="appendNum('2')">2</button>
             <button class="btn" onclick="appendNum('3')">3</button>
-            <button class="btn btn-clear" onclick="clearInput()">C</button>
+            <button class="btn btn-alpha" onclick="appendNum('C')">C</button>
+            
+            <button class="btn btn-clear" onclick="clearInput()">CLR</button>
             <button class="btn" onclick="appendNum('0')">0</button>
             <button class="btn btn-enter" onclick="submitOrder()">Enter</button>
+            <button class="btn btn-alpha" onclick="appendNum('D')">D</button>
         </div>
     </div>
 
@@ -271,12 +283,18 @@
         function appendNum(num) { if (isPosConnected) return; inputField.value += num; }
         function clearInput() { if (isPosConnected) return; inputField.value = ''; }
 
+        // Keyboard tracking adjusted to recognize alphanumeric entries cleanly
         document.addEventListener('keydown', (e) => {
             if (isPosConnected) return;
-            if (e.key >= '0' && e.key <= '9') appendNum(e.key);
+            const key = e.key.toUpperCase();
+            
+            // Allow numbers 0-9 and letters A-D
+            if ((key >= '0' && key <= '9') || ['A', 'B', 'C', 'D'].includes(key)) {
+                appendNum(key);
+            }
             if (e.key === 'Backspace') inputField.value = inputField.value.slice(0, -1);
             if (e.key === 'Enter') submitOrder();
-            if (e.key === 'Escape' || e.key.toLowerCase() === 'c') clearInput();
+            if (e.key === 'Escape') clearInput();
         });
 
         async function submitOrder() {
