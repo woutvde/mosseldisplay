@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Klantenscherm - Klaar om op te halen</title>
+    <title>Klantenscherm - Status Overzicht</title>
     <style>
         body {
             font-family: 'Helvetica', sans-serif;
@@ -16,62 +16,124 @@
             height: 100vh;
             box-sizing: border-box;
         }
-        h1 {
-            text-align: center;
-            font-size: 4rem;
-            margin-bottom: 50px;
-            text-transform: uppercase;
-        }
-        .grid-container {
+        .display-container {
+            display: flex;
             flex: 1;
+            gap: 50px;
+            overflow: hidden;
+        }
+        .column {
+            display: flex;
+            flex-direction: column;
+        }
+        /* Smaller columns for items being prepared */
+        .preparing-column {
+            flex: 1;
+            border-right: 3px dashed #222;
+            padding-right: 30px;
+        }
+        /* Dominant screen ratio space for finished items */
+        .ready-column {
+            flex: 3;
+        }
+        h1 {
+            font-size: 2.2rem;
+            text-transform: uppercase;
+            margin-bottom: 25px;
+            letter-spacing: 2px;
+        }
+        .preparing-column h1 { color: #ff9933; }
+        .ready-column h1 { color: #00ff00; }
+
+        .grid-container {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 30px;
+            gap: 20px;
             align-content: start;
         }
+        .preparing-grid {
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        }
+        .ready-grid {
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 30px;
+        }
+        
         .order-number {
-            color: yellow;
-            font-size: 8rem;
             font-weight: bold;
             text-align: center;
-            background-color: #1a1a1a;
+            background-color: #111;
             border-radius: 15px;
+            box-sizing: border-box;
+        }
+        /* Intentionally sized smaller */
+        .order-number.preparing {
+            color: #ffaa66;
+            font-size: 3.5rem;
+            padding: 15px;
+            border: 2px solid #331f0c;
+        }
+        /* Intentionally sized bigger with highlight accents */
+        .order-number.ready {
+            color: yellow;
+            font-size: 7rem;
             padding: 20px;
-            box-shadow: 0 0 20px rgba(255, 255, 0, 0.1);
+            box-shadow: 0 0 25px rgba(255, 255, 0, 0.12);
+            border: 2px solid #333300;
         }
     </style>
 </head>
 <body>
 
-    <h1>Deze bestellingen zijn klaar om op te halen</h1>
-    <div class="grid-container" id="displayGrid"></div>
+    <div class="display-container">
+        <div class="column preparing-column">
+            <h1>Wordt gemaakt</h1>
+            <div class="grid-container preparing-grid" id="preparingGrid"></div>
+        </div>
+
+        <div class="column ready-column">
+            <h1>Klaar om op te halen</h1>
+            <div class="grid-container ready-grid" id="readyGrid"></div>
+        </div>
+    </div>
 
     <script>
-        const displayGrid = document.getElementById('displayGrid');
-        let lastOrders = [];
+        const preparingGrid = document.getElementById('preparingGrid');
+        const readyGrid = document.getElementById('readyGrid');
+        let lastStateString = "";
 
         async function fetchOrders() {
             try {
                 const res = await fetch('/api/orders');
-                const orders = await res.json();
+                const data = await res.json();
                 
-                // Only redraw DOM if the array actually changed
-                if (JSON.stringify(orders) !== JSON.stringify(lastOrders)) {
-                    displayGrid.innerHTML = '';
-                    orders.forEach(order => {
+                const currentStateString = JSON.stringify({p: data.preparing, r: data.ready});
+                
+                if (currentStateString !== lastStateString) {
+                    // Update Preparing Grid UI
+                    preparingGrid.innerHTML = '';
+                    data.preparing.forEach(order => {
                         const div = document.createElement('div');
-                        div.className = 'order-number';
+                        div.className = 'order-number preparing';
                         div.textContent = order;
-                        displayGrid.appendChild(div);
+                        preparingGrid.appendChild(div);
                     });
-                    lastOrders = orders;
+
+                    // Update Ready Grid UI
+                    readyGrid.innerHTML = '';
+                    data.ready.forEach(order => {
+                        const div = document.createElement('div');
+                        div.className = 'order-number ready';
+                        div.textContent = order;
+                        readyGrid.appendChild(div);
+                    });
+
+                    lastStateString = currentStateString;
                 }
             } catch (error) {
                 console.error("Connection lost...");
             }
         }
 
-        // Poll every 2 seconds
         setInterval(fetchOrders, 2000);
         fetchOrders();
     </script>

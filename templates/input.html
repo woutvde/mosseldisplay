@@ -16,6 +16,13 @@
             flex: 1;
             padding: 40px;
             overflow-y: auto;
+            display: flex;
+            gap: 40px;
+        }
+        .column-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
         }
         .right-panel {
             width: 450px;
@@ -25,8 +32,9 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            position: relative;
         }
-        h2 { font-size: 2rem; color: #333; }
+        h2 { font-size: 1.8rem; color: #333; margin-top: 0; }
         
         /* Numpad & Input */
         #orderInput {
@@ -56,34 +64,73 @@
         .btn-clear { background-color: #ff9999; }
         .btn-enter { background-color: #99ff99; }
         
-        /* Active Orders Grid */
+        /* Active Orders Grid Setup */
         .orders-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
         }
         .order-btn {
-            background-color: #ffcccc;
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: bold;
-            padding: 30px 10px;
-            border: 1px solid #c99;
+            padding: 20px 10px;
+            border: 2px solid;
             border-radius: 8px;
             cursor: pointer;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+            text-align: center;
         }
-        .order-btn:hover { background-color: #ffb3b3; }
+        .preparing-btn {
+            background-color: #ffe6cc;
+            border-color: #f9c29d;
+            color: #b35c00;
+        }
+        .preparing-btn:hover { background-color: #ffd8b3; }
+        
+        .ready-btn {
+            background-color: #ccffcc;
+            border-color: #99ff99;
+            color: #006600;
+        }
+        .ready-btn:hover { background-color: #b3ffb3; }
+
+        /* POS Blockout Layer */
+        .pos-overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(220, 220, 220, 0.92);
+            color: #555;
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            padding: 30px;
+            box-sizing: border-box;
+            border-left: 1px solid #bbb;
+        }
     </style>
 </head>
 <body>
 
     <div class="left-panel">
-        <h2>Klik op een bestelnummer om het te verwijderen:</h2>
-        <div class="orders-grid" id="activeOrders"></div>
+        <div class="column-section">
+            <h2>Wordt gemaakt:</h2>
+            <div class="orders-grid" id="preparingOrders"></div>
+        </div>
+        <div class="column-section">
+            <h2>Klaar voor afhalen:</h2>
+            <div class="orders-grid" id="readyOrders"></div>
+        </div>
     </div>
 
     <div class="right-panel">
+        <!-- Overlay container elements for POS locks -->
+        <div class="pos-overlay" id="posOverlay">verbonden aan mosselpos</div>
+        
         <h2>Nieuwe Bestelling:</h2>
         <input type="text" id="orderInput" readonly>
         
@@ -105,13 +152,22 @@
 
     <script>
         const inputField = document.getElementById('orderInput');
-        const ordersGrid = document.getElementById('activeOrders');
+        const preparingGrid = document.getElementById('preparingOrders');
+        const readyGrid = document.getElementById('readyOrders');
+        const posOverlay = document.getElementById('posOverlay');
+        let isPosConnected = false;
 
-        function appendNum(num) { inputField.value += num; }
-        function clearInput() { inputField.value = ''; }
+        function appendNum(num) { 
+            if (isPosConnected) return;
+            inputField.value += num; 
+        }
+        function clearInput() { 
+            if (isPosConnected) return;
+            inputField.value = ''; 
+        }
 
-        // Allow physical keyboard entry
         document.addEventListener('keydown', (e) => {
+            if (isPosConnected) return;
             if (e.key >= '0' && e.key <= '9') appendNum(e.key);
             if (e.key === 'Backspace') inputField.value = inputField.value.slice(0, -1);
             if (e.key === 'Enter') submitOrder();
@@ -119,39 +175,62 @@
         });
 
         async function submitOrder() {
+            if (isPosConnected) return;
             const orderNum = inputField.value.trim();
             if (!orderNum) return;
             
             await fetch('/api/orders', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ order: orderNum })
+                body: JSON.stringify({ order: orderNum, status: 'preparing' })
             });
             
             clearInput();
-            fetchOrders(); // Immediately update UI
+            fetchOrders();
+        }
+
+        async function moveToReady(orderNum) {
+            await fetch(`/api/orders/${orderNum}/ready`, { method: 'PUT' });
+            fetchOrders();
         }
 
         async function removeOrder(orderNum) {
             await fetch(`/api/orders/${orderNum}`, { method: 'DELETE' });
-            fetchOrders(); // Immediately update UI
+            fetchOrders();
         }
 
         async function fetchOrders() {
-            const res = await fetch('/api/orders');
-            const orders = await res.json();
-            
-            ordersGrid.innerHTML = '';
-            orders.forEach(order => {
-                const btn = document.createElement('button');
-                btn.className = 'order-btn';
-                btn.textContent = order;
-                btn.onclick = () => removeOrder(order);
-                ordersGrid.appendChild(btn);
-            });
+            try {
+                const res = await fetch('/api/orders');
+                const data = await res.json();
+                
+                isPosConnected = data.pos_connected;
+                posOverlay.style.display = isPosConnected ? 'flex' : 'none';
+                
+                // Render preparing list
+                preparingGrid.innerHTML = '';
+                data.preparing.forEach(order => {
+                    const btn = document.createElement('button');
+                    btn.className = 'order-btn preparing-btn';
+                    btn.textContent = order;
+                    btn.onclick = () => moveToReady(order);
+                    preparingGrid.appendChild(btn);
+                });
+
+                // Render ready list
+                readyGrid.innerHTML = '';
+                data.ready.forEach(order => {
+                    const btn = document.createElement('button');
+                    btn.className = 'order-btn ready-btn';
+                    btn.textContent = order;
+                    btn.onclick = () => removeOrder(order);
+                    readyGrid.appendChild(btn);
+                });
+            } catch (e) {
+                console.error("Connection lost...", e);
+            }
         }
 
-        // Poll for updates every 2 seconds (keeps multiple staff screens in sync)
         setInterval(fetchOrders, 2000);
         fetchOrders();
     </script>

@@ -2,15 +2,14 @@ from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 
-# In-memory storage for active orders. 
-# Note: For this to work reliably behind Nginx with Gunicorn, 
-# you must run Gunicorn with a single worker (--workers 1).
-ready_orders = []
+# In-memory storage for splitting order tracking states
+order_data = {
+    "preparing": [],
+    "ready": [],
+    "pos_connected": False
+}
 
 @app.route('/')
-def index():
-    return render_template('input.html')
-
 @app.route('/input')
 def input_page():
     return render_template('input.html')
@@ -23,25 +22,51 @@ def display_page():
 
 @app.route('/api/orders', methods=['GET', 'POST'])
 def handle_orders():
+    global order_data
     if request.method == 'POST':
-        data = request.json
-        order = str(data.get('order')).strip()
+        data = request.get_json() or {}
+        order = str(data.get('order', '')).strip()
+        status = data.get('status', 'preparing')  # Default status for new orders
+        source = data.get('source', '')
         
-        # Add order if valid and not already in the list
-        if order and order.isdigit() and order not in ready_orders:
-            ready_orders.append(order)
+        # If order comes from the POS API, lock the numpad out
+        if source == 'pos':
+            order_data['pos_connected'] = True
             
-        return jsonify(ready_orders)
-    
-    # GET request returns the current list
-    return jsonify(ready_orders)
+        if order and order.isdigit():
+            # Clean up duplicates across both lists first
+            if order in order_data['preparing']:
+                order_data['preparing'].remove(order)
+            if order in order_data['ready']:
+                order_data['ready'].remove(order)
+                
+            # Place order into the appropriate channel
+            if status == 'ready':
+                order_data['ready'].append(order)
+            else:
+                order_data['preparing'].append(order)
+                
+        return jsonify(order_data)
+        
+    return jsonify(order_data)
+
+@app.route('/api/orders/<order>/ready', methods=['PUT'])
+def move_to_ready(order):
+    global order_data
+    if order in order_data['preparing']:
+        order_data['preparing'].remove(order)
+        if order not in order_data['ready']:
+            order_data['ready'].append(order)
+    return jsonify(order_data)
 
 @app.route('/api/orders/<order>', methods=['DELETE'])
 def delete_order(order):
-    if order in ready_orders:
-        ready_orders.remove(order)
-    return jsonify(ready_orders)
+    global order_data
+    if order in order_data['preparing']:
+        order_data['preparing'].remove(order)
+    if order in order_data['ready']:
+        order_data['ready'].remove(order)
+    return jsonify(order_data)
 
 if __name__ == '__main__':
-    # Run accessible on local network
     app.run(host='0.0.0.0', port=5000)
