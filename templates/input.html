@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Personeel Invoer - Bestellingen Tracker</title>
     <style>
-        body { 
-            background-color: #0f172a; 
+        body {
+            background-color: #0f172a;
             color: #f8fafc;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            margin: 0; 
-            display: flex; 
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            display: flex;
             height: 100vh;
             transition: background-color 0.3s ease, color 0.3s ease;
         }
@@ -19,7 +19,9 @@
         .theme-bar {
             position: fixed;
             top: 20px;
-            right: 480px; /* Positioned clearly left of the side control panel */
+            /* Centered within the left panel (as if the 450px sidebar is the screen edge) */
+            left: calc(50% - 225px);
+            transform: translateX(-50%);
             display: flex;
             gap: 15px;
             z-index: 1000;
@@ -34,14 +36,59 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             transition: all 0.3s ease;
         }
+        .theme-bar.sidebar-hidden {
+            /* Centered on the full screen when the sidebar is hidden */
+            left: 50%;
+        }
         .theme-control { display: flex; align-items: center; gap: 8px; color: #94a3b8; }
-        .theme-toggle-btn {
-            background: #0f172a; border: 1px solid #334155; color: #cbd5e1;
-            padding: 4px 12px; border-radius: 15px; cursor: pointer;
-            font-size: 11px; font-weight: bold; text-transform: uppercase;
+        .theme-icon { font-size: 14px; line-height: 1; }
+        /* Undo button in the top bar */
+        .bar-undo-btn {
+            background-color: #312e81;
+            color: #a5b4fc;
+            border: 1px solid #3730a3;
+            padding: 6px 14px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
             transition: all 0.2s ease;
         }
-        .theme-toggle-btn:hover { border-color: #38bdf8; color: #38bdf8; }
+        .bar-undo-btn:hover { background-color: #3730a3; color: white; }
+        /* On/off switch style toggle */
+        .theme-toggle-btn {
+            position: relative;
+            width: 52px;
+            height: 26px;
+            background: #334155;
+            border: 1px solid #475569;
+            border-radius: 26px;
+            cursor: pointer;
+            transition: background 0.25s ease, border-color 0.25s ease;
+            padding: 0;
+            outline: none;
+        }
+        .theme-toggle-btn::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #94a3b8;
+            transition: transform 0.25s ease, background 0.25s ease;
+        }
+        .theme-toggle-btn.on {
+            background: #0e7490;
+            border-color: #06b6d4;
+        }
+        .theme-toggle-btn.on::after {
+            transform: translateX(26px);
+            background: #ffffff;
+        }
+        .theme-toggle-btn:hover { border-color: #38bdf8; }
 
         .left-panel {
             flex: 1;
@@ -69,9 +116,9 @@
             justify-content: center;
             transition: background-color 0.3s ease, border-color 0.3s ease;
         }
-        
+
         h2 { font-size: 1.5rem; font-weight: 700; color: #94a3b8; margin-top: 0; text-transform: uppercase; letter-spacing: 1px; }
-        
+
         /* Modernized Inputs & Control Keypads */
         #orderInput {
             font-size: 4rem;
@@ -87,7 +134,7 @@
             border-radius: 12px;
             transition: all 0.3s ease;
         }
-        
+
         /* Updated layout style to handle a 4-column grid setup neatly */
         .numpad {
             display: grid;
@@ -113,17 +160,6 @@
         .btn-enter:hover { background-color: #065f46; }
         .btn-alpha { color: #38bdf8; border-color: #1e293b; } /* Custom highlight color for letters */
 
-        /* Undo knop - blijft klikbaar boven de pos-overlay */
-        .btn-undo {
-            background-color: #312e81;
-            color: #a5b4fc;
-            border-color: #3730a3;
-            font-size: 1.3rem;
-            z-index: 20;
-            position: relative;
-        }
-        .btn-undo:hover { background-color: #3730a3; color: white; }
-        
         /* Grid Layout Configuration */
         .orders-grid {
             display: grid;
@@ -144,52 +180,30 @@
             transition: all 0.2s ease;
         }
         .order-btn:hover { transform: translateY(-2px); }
-        
+
         .preparing-btn { border-color: #b45309; color: #fbbf24; }
         .preparing-btn:hover { background: #78350f; }
 
         .pending-btn { border-color: #3b82f6; color: #60a5fa; }
         .pending-btn:hover { background: #1e3a8a; }
-        
+
         .ready-btn { border-color: #047857; color: #34d399; }
         .ready-btn:hover { background: #064e3b; }
-
-        /* Full Height POS Blockout Layer */
-        .pos-overlay {
-            display: none;
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(15, 23, 42, 0.95);
-            color: #94a3b8;
-            font-size: 1.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            text-align: center;
-            justify-content: center;
-            align-items: center;
-            z-index: 10;
-            padding: 40px;
-            box-sizing: border-box;
-            pointer-events: none; /* Laat muisklikken door naar de undo-knop */
-        }
-
-        /* Tekst in de overlay apart klikbaar maken of uitsluiten indien nodig */
-        .pos-overlay span {
-            pointer-events: auto;
-        }
 
         /* ================= LIGHT MODE OVERRIDES ================= */
         body.light-theme { background-color: #f8fafc; color: #0f172a; }
         body.light-theme .theme-bar {
             background: rgba(255, 255, 255, 0.85); border-color: #cbd5e1; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
-        body.light-theme .theme-toggle-btn { background: #f1f5f9; border-color: #cbd5e1; color: #334155; }
-        body.light-theme .theme-toggle-btn:hover { border-color: #0284c7; color: #0284c7; }
-        
+        body.light-theme .theme-toggle-btn { background: #cbd5e1; border-color: #94a3b8; }
+        body.light-theme .theme-toggle-btn::after { background: #f8fafc; }
+        body.light-theme .theme-toggle-btn.on { background: #0284c7; border-color: #0ea5e9; }
+        body.light-theme .theme-toggle-btn.on::after { background: #ffffff; }
+        body.light-theme .theme-toggle-btn:hover { border-color: #0284c7; }
+
         body.light-theme .right-panel { background-color: #ffffff; border-left-color: #cbd5e1; }
         body.light-theme #orderInput { background: #ffffff; color: #0f172a; border-color: #cbd5e1; }
-        
+
         body.light-theme .btn { background-color: #f1f5f9; border-color: #cbd5e1; color: #334155; }
         body.light-theme .btn:hover { background-color: #e2e8f0; color: #0f172a; }
         body.light-theme .btn-clear { background-color: #fee2e2; color: #991b1b; border-color: #fca5a5; }
@@ -205,24 +219,33 @@
         body.light-theme .pending-btn:hover { background: #dbeafe; }
         body.light-theme .ready-btn { border-color: #10b981; color: #059669; }
         body.light-theme .ready-btn:hover { background: #d1fae5; }
-        body.light-theme .btn-undo { background-color: #e0e7ff; color: #3730a3; border-color: #c7d2fe; }
-        body.light-theme .btn-undo:hover { background-color: #c7d2fe; color: #1e1b4b; }
-        
-        body.light-theme .pos-overlay { background-color: rgba(255, 255, 255, 0.96); color: #64748b; }
+        body.light-theme .bar-undo-btn { background-color: #e0e7ff; color: #3730a3; border-color: #c7d2fe; }
+        body.light-theme .bar-undo-btn:hover { background-color: #c7d2fe; color: #1e1b4b; }
     </style>
 </head>
 <body>
 
     <!-- TOP DIRECTIONAL CONTROL TOOLBAR -->
-    <div class="theme-bar">
+    <div class="theme-bar" id="themeBar">
         <div class="theme-control">
             <span>Invoer paneel:</span>
-            <button onclick="toggleLocalTheme()" id="localThemeBtn" class="theme-toggle-btn">Donker</button>
+            <span class="theme-icon" id="localThemeIcon">☾</span>
+            <button onclick="toggleLocalTheme()" id="localThemeBtn" class="theme-toggle-btn" aria-label="Invoer paneel thema"></button>
         </div>
         <div class="theme-control">
             <span>Klantenscherm:</span>
-            <button onclick="toggleRemoteTheme()" id="remoteThemeBtn" class="theme-toggle-btn">Donker</button>
+            <span class="theme-icon" id="remoteThemeIcon">☾</span>
+            <button onclick="toggleRemoteTheme()" id="remoteThemeBtn" class="theme-toggle-btn" aria-label="Klantenscherm thema"></button>
         </div>
+        <div class="theme-control">
+            <span>Toetsenbord:</span>
+            <button onclick="toggleNumpad()" id="numpadBtn" class="theme-toggle-btn" aria-label="Toetsenbord"></button>
+        </div>
+        <div class="theme-control">
+            <span>Direct naar keuken:</span>
+            <button onclick="toggleAutoMode()" id="autoModeBtn" class="theme-toggle-btn" aria-label="Automatische modus"></button>
+        </div>
+        <button onclick="undoAction()" id="undoBtn" class="bar-undo-btn">↩ Ongedaan maken</button>
     </div>
 
     <div class="left-panel">
@@ -240,36 +263,31 @@
         </div>
     </div>
 
-    <div class="right-panel">
-        <!-- Overlay container blocks keypads on POS interactions -->
-        <div class="pos-overlay" id="posOverlay"><span>verbonden aan mosselpos</span></div>
-        
+    <div class="right-panel" id="rightPanel">
         <h2>Nieuwe Bestelling</h2>
         <input type="text" id="orderInput" readonly>
-        
+
         <!-- Expanded Grid layout showing numeric values side by side with tracking IDs -->
-        <div class="numpad">
+        <div class="numpad" id="numpad">
             <button class="btn" onclick="appendNum('7')">7</button>
             <button class="btn" onclick="appendNum('8')">8</button>
             <button class="btn" onclick="appendNum('9')">9</button>
             <button class="btn btn-alpha" onclick="appendNum('A')">A</button>
-            
+
             <button class="btn" onclick="appendNum('4')">4</button>
             <button class="btn" onclick="appendNum('5')">5</button>
             <button class="btn" onclick="appendNum('6')">6</button>
             <button class="btn btn-alpha" onclick="appendNum('B')">B</button>
-            
+
             <button class="btn" onclick="appendNum('1')">1</button>
             <button class="btn" onclick="appendNum('2')">2</button>
             <button class="btn" onclick="appendNum('3')">3</button>
             <button class="btn btn-alpha" onclick="appendNum('C')">C</button>
-            
+
             <button class="btn btn-clear" onclick="clearInput()">CLR</button>
             <button class="btn" onclick="appendNum('0')">0</button>
             <button class="btn btn-enter" onclick="submitOrder()">Enter</button>
             <button class="btn btn-alpha" onclick="appendNum('D')">D</button>
-
-            <button class="btn btn-undo" id="undoBtn" onclick="undoAction()" style="grid-column: span 4;">⌫ UNDO</button>
         </div>
     </div>
 
@@ -278,22 +296,31 @@
         const preparingGrid = document.getElementById('preparingOrders');
         const pendingGrid = document.getElementById('pendingOrders');
         const readyGrid = document.getElementById('readyOrders');
-        const posOverlay = document.getElementById('posOverlay');
-        
-        let isPosConnected = false;
+        const rightPanel = document.getElementById('rightPanel');
+        const numpad = document.getElementById('numpad');
+        const themeBar = document.getElementById('themeBar');
+
         let remoteThemeState = "dark";
+        let autoMode = false;
+
+        // Update the sun/moon icon next to a theme toggle
+        function updateThemeIcon(iconId, isLight) {
+            document.getElementById(iconId).textContent = isLight ? '☀' : '☾';
+        }
 
         // Local UI storage configuration tracking
         const savedLocalTheme = localStorage.getItem('input_panel_theme') || 'dark';
         document.body.classList.toggle('light-theme', savedLocalTheme === 'light');
-        document.getElementById('localThemeBtn').innerText = savedLocalTheme === 'light' ? 'Licht' : 'Donker';
+        document.getElementById('localThemeBtn').classList.toggle('on', savedLocalTheme === 'light');
+        updateThemeIcon('localThemeIcon', savedLocalTheme === 'light');
 
         function toggleLocalTheme() {
             const isLight = document.body.classList.contains('light-theme');
             const target = isLight ? 'dark' : 'light';
             document.body.classList.toggle('light-theme', target === 'light');
             localStorage.setItem('input_panel_theme', target);
-            document.getElementById('localThemeBtn').innerText = target === 'light' ? 'Licht' : 'Donker';
+            document.getElementById('localThemeBtn').classList.toggle('on', target === 'light');
+            updateThemeIcon('localThemeIcon', target === 'light');
         }
 
         async function toggleRemoteTheme() {
@@ -305,20 +332,57 @@
                     body: JSON.stringify({ theme: targetTheme })
                 });
                 remoteThemeState = targetTheme;
-                document.getElementById('remoteThemeBtn').innerText = targetTheme === 'light' ? 'Licht' : 'Donker';
+                document.getElementById('remoteThemeBtn').classList.toggle('on', targetTheme === 'light');
+                updateThemeIcon('remoteThemeIcon', targetTheme === 'light');
             } catch (e) {
                 console.error("Failed syncing dynamic remote themes", e);
             }
         }
 
-        function appendNum(num) { if (isPosConnected) return; inputField.value += num; }
-        function clearInput() { if (isPosConnected) return; inputField.value = ''; }
+        // Numpad visibility toggle (persisted locally).
+        // Hides the entire right sidebar (input field + numpad) to free space for orders.
+        const savedNumpad = localStorage.getItem('input_numpad') || 'on';
+        applyNumpad(savedNumpad);
+        document.getElementById('numpadBtn').classList.toggle('on', savedNumpad === 'on');
+
+        function toggleNumpad() {
+            const current = rightPanel.style.display !== 'none' ? 'on' : 'off';
+            const target = current === 'on' ? 'off' : 'on';
+            localStorage.setItem('input_numpad', target);
+            applyNumpad(target);
+            document.getElementById('numpadBtn').classList.toggle('on', target === 'on');
+        }
+
+        function applyNumpad(state) {
+            const hidden = state === 'off';
+            rightPanel.style.display = hidden ? 'none' : 'flex';
+            numpad.style.display = hidden ? 'none' : 'grid';
+            // Move the top bar to the right edge when the sidebar is hidden
+            themeBar.classList.toggle('sidebar-hidden', hidden);
+        }
+
+        async function toggleAutoMode() {
+            autoMode = !autoMode;
+            try {
+                await fetch('/api/auto_mode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ auto_mode: autoMode })
+                });
+                document.getElementById('autoModeBtn').classList.toggle('on', autoMode);
+            } catch (e) {
+                console.error("Failed toggling auto mode", e);
+            }
+        }
+
+        function appendNum(num) { inputField.value += num; }
+        function clearInput() { inputField.value = ''; }
 
         // Keyboard tracking adjusted to recognize alphanumeric entries cleanly
         document.addEventListener('keydown', (e) => {
-            if (isPosConnected) return;
+            if (numpad.style.display === 'none') return; // numpad disabled
             const key = e.key.toUpperCase();
-            
+
             // Allow numbers 0-9 and letters A-D
             if ((key >= '0' && key <= '9') || ['A', 'B', 'C', 'D'].includes(key)) {
                 appendNum(key);
@@ -329,21 +393,21 @@
         });
 
         async function submitOrder() {
-            if (isPosConnected) return;
+            if (numpad.style.display === 'none') return; // numpad disabled
             const orderNum = inputField.value.trim();
             if (!orderNum) return;
-            
+
             await fetch('/api/orders', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ order: orderNum, status: 'preparing' })
+                body: JSON.stringify({ order: orderNum, status: 'queued' })
             });
             clearInput();
             fetchOrders();
         }
 
-        async function moveToPending(orderNum) {
-            await fetch(`/api/orders/${orderNum}/pending`, { method: 'PUT' });
+        async function moveToPreparing(orderNum) {
+            await fetch(`/api/orders/${orderNum}/preparing`, { method: 'PUT' });
             fetchOrders();
         }
 
@@ -367,36 +431,44 @@
             try {
                 const res = await fetch('/api/orders');
                 const data = await res.json();
-                
-                isPosConnected = data.pos_connected;
-                posOverlay.style.display = isPosConnected ? 'flex' : 'none';
-                
-                remoteThemeState = data.display_theme;
-                document.getElementById('remoteThemeBtn').innerText = remoteThemeState === 'light' ? 'Licht' : 'Donker';
 
-                // Render preparing list (new incoming orders)
+                autoMode = data.auto_mode;
+                document.getElementById('autoModeBtn').classList.toggle('on', autoMode);
+
+                remoteThemeState = data.display_theme;
+                document.getElementById('remoteThemeBtn').classList.toggle('on', remoteThemeState === 'light');
+                updateThemeIcon('remoteThemeIcon', remoteThemeState === 'light');
+
+                // Render queued list (bestelling / new incoming orders).
+                // In auto mode the input page cannot move these - they auto-enter the kitchen.
                 preparingGrid.innerHTML = '';
-                (data.preparing || []).forEach(order => {
+                (data.queued || []).forEach(order => {
                     const num = order.order || order;
                     const btn = document.createElement('button');
                     btn.className = 'order-btn preparing-btn';
                     btn.textContent = num;
-                    btn.onclick = () => moveToPending(num);
+                    if (!autoMode) {
+                        btn.onclick = () => moveToPreparing(num);
+                    }
                     preparingGrid.appendChild(btn);
                 });
 
-                // Render pending list (being made)
+                // Render preparing list (being made in the kitchen).
+                // In auto mode the input page cannot move these either.
                 pendingGrid.innerHTML = '';
-                (data.pending || []).forEach(order => {
+                (data.preparing || []).forEach(order => {
                     const num = order.order || order;
                     const btn = document.createElement('button');
                     btn.className = 'order-btn pending-btn';
                     btn.textContent = num;
-                    btn.onclick = () => moveToReady(num);
+                    if (!autoMode) {
+                        btn.onclick = () => moveToReady(num);
+                    }
                     pendingGrid.appendChild(btn);
                 });
 
-                // Render done (ready for pickup) list
+                // Render done (ready for pickup) list.
+                // The input page can always remove these (pickup).
                 readyGrid.innerHTML = '';
                 (data.done || []).forEach(order => {
                     const num = order.order || order;

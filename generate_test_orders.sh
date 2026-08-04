@@ -38,11 +38,11 @@ for i in "${!ORDERS[@]}"; do
     done
     ITEMS+="]"
 
-    # Build the full order payload (status preparing -> kitchen decides)
+    # Build the full order payload (status queued -> bestelling, kitchen decides)
     PAYLOAD=$(cat <<EOF
 {
     "order": "$ORDER",
-    "status": "preparing",
+    "status": "queued",
     "source": "test",
     "order_details": {
         "ticket": "T$ORDER",

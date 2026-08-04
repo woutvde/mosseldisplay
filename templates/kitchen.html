@@ -10,7 +10,7 @@
             color: #f8fafc;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             margin: 0;
-            padding: 5vh 5vw;
+            padding: 4vh 4vw;
             height: 100vh;
             display: flex;
             flex-direction: column;
@@ -23,14 +23,14 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
             border-bottom: 2px solid #1e293b;
             transition: border-color 0.3s ease;
         }
 
         .kitchen-header h1 {
-            font-size: 28px;
+            font-size: 26px;
             text-transform: uppercase;
             letter-spacing: 3px;
             font-weight: 700;
@@ -60,12 +60,12 @@
 
         .grid-controls {
             display: flex;
-            gap: 15px;
+            gap: 12px;
             align-items: center;
         }
 
         .grid-controls label {
-            font-size: 14px;
+            font-size: 13px;
             color: #94a3b8;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -77,7 +77,7 @@
             color: #f8fafc;
             font-size: 14px;
             font-weight: 600;
-            padding: 8px 16px;
+            padding: 6px 12px;
             border-radius: 12px;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -94,31 +94,47 @@
         }
 
         .theme-toggle-btn {
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: #cbd5e1;
-            padding: 8px 16px;
-            border-radius: 12px;
+            position: relative;
+            width: 52px;
+            height: 26px;
+            background: #334155;
+            border: 1px solid #475569;
+            border-radius: 26px;
             cursor: pointer;
-            font-size: 13px;
-            font-weight: 700;
-            text-transform: uppercase;
-            transition: all 0.2s ease;
+            transition: background 0.25s ease, border-color 0.25s ease;
+            padding: 0;
+            outline: none;
         }
-
-        .theme-toggle-btn:hover {
-            border-color: #38bdf8;
-            color: #38bdf8;
+        .theme-toggle-btn::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #94a3b8;
+            transition: transform 0.25s ease, background 0.25s ease;
         }
+        .theme-toggle-btn.on {
+            background: #0e7490;
+            border-color: #06b6d4;
+        }
+        .theme-toggle-btn.on::after {
+            transform: translateX(26px);
+            background: #ffffff;
+        }
+        .theme-toggle-btn:hover { border-color: #38bdf8; }
+        .theme-icon { font-size: 14px; line-height: 1; }
 
         .undo-btn {
             background: #312e81;
             border: 1px solid #3730a3;
             color: #a5b4fc;
-            padding: 8px 16px;
+            padding: 6px 14px;
             border-radius: 12px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
             text-transform: uppercase;
             transition: all 0.2s ease;
@@ -129,22 +145,22 @@
             color: white;
         }
 
-        .orders-grid {
+        main {
             flex: 1;
-            overflow-y: auto;
-            display: grid;
-            gap: 20px;
-            align-content: start;
-            padding-right: 8px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
         }
 
-        /* Grid column configurations */
-        .orders-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
-        .orders-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
-        .orders-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
-        .orders-grid.cols-5 { grid-template-columns: repeat(5, 1fr); }
-        .orders-grid.cols-6 { grid-template-columns: repeat(6, 1fr); }
-        .orders-grid.cols-auto { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+        .orders-grid {
+            flex: 1;
+            display: grid;
+            gap: 16px;
+            /* Columns and rows are set via CSS variables from JS */
+            grid-template-columns: repeat(var(--cols, 5), minmax(0, 1fr));
+            grid-template-rows: repeat(var(--rows, 2), minmax(0, 1fr));
+            min-height: 0;
+        }
 
         /* Modern chip formatting derived from bingosoft */
         .order-chip {
@@ -152,19 +168,20 @@
             border: 3px solid #334155;
             font-weight: 800;
             text-align: center;
-            border-radius: 24px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            border-radius: 20px;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.15);
             animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
             transition: all 0.2s ease;
             cursor: pointer;
             user-select: none;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            min-height: 180px;
-            padding: 24px 20px;
+            padding: 12px 10px;
             position: relative;
+            box-sizing: border-box;
+            overflow: hidden;
+            min-height: 0;
         }
 
         .order-chip:hover {
@@ -179,43 +196,48 @@
 
         .order-chip.preparing {
             color: #cbd5e1;
-            font-size: 3.5rem;
         }
 
-        .order-chip .status-badge {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 4px 10px;
-            border-radius: 12px;
-            opacity: 0.8;
-        }
-
-        .order-chip.preparing .status-badge {
-            background: #64748b;
-            color: #f8fafc;
-        }
-
+        /* Order number pinned to the top-middle of the box */
         .order-chip .order-number {
             word-break: break-word;
             line-height: 1.1;
+            font-size: calc(4rem * var(--order-scale, 1));
+            margin-top: 6px;
+        }
+
+        /* Faint divider line below the order number */
+        .order-chip .order-divider {
+            width: 100%;
+            border-top: 1px solid rgba(148, 163, 184, 0.35);
+            margin: 8px 0;
         }
 
         .order-chip .order-details {
-            font-size: 1.3rem;
-            margin-top: 10px;
+            font-size: calc(1.3rem * var(--order-scale, 1));
             color: #a0aec0;
-            line-height: 1.4;
+            line-height: 1.3;
             width: 100%;
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .order-chip .order-details::-webkit-scrollbar {
+            width: 6px;
+        }
+        .order-chip .order-details::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 3px;
+        }
+        body.light-theme .order-chip .order-details::-webkit-scrollbar-thumb {
+            background: #94a3b8;
         }
 
         .order-chip .item-row {
             text-align: left;
-            padding: 3px 0;
+            padding: 2px 0;
             font-weight: 600;
             color: #cbd5e1;
         }
@@ -228,19 +250,45 @@
         .order-chip .item-qty {
             color: #38bdf8;
             font-weight: 800;
-            margin-right: 6px;
+            margin-right: 5px;
+        }
+
+        /* FIFO direction arrows on the first (oldest) and last (newest) order */
+        .fifo-arrow {
+            position: absolute;
+            font-size: calc(2.4rem * var(--order-scale, 1));
+            font-weight: 900;
+            color: #38bdf8;
+            line-height: 1;
+            text-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .order-chip.fifo-first .fifo-arrow {
+            top: 6px;
+            left: 8px;
+        }
+
+        .order-chip.fifo-last .fifo-arrow {
+            bottom: 6px;
+            right: 8px;
+        }
+
+        body.light-theme .fifo-arrow {
+            color: #0284c7;
+            text-shadow: 0 0 12px rgba(2, 132, 199, 0.3);
         }
 
         .empty-state {
             grid-column: 1 / -1;
+            grid-row: 1 / -1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 200px;
             color: #64748b;
             text-align: center;
-            padding: 40px;
         }
 
         .empty-state svg {
@@ -283,14 +331,23 @@
         }
 
         body.light-theme .theme-toggle-btn {
-            background: #f1f5f9;
-            border-color: #cbd5e1;
-            color: #334155;
+            background: #cbd5e1;
+            border-color: #94a3b8;
+        }
+        body.light-theme .theme-toggle-btn::after {
+            background: #f8fafc;
+        }
+        body.light-theme .theme-toggle-btn.on {
+            background: #0284c7;
+            border-color: #0ea5e9;
+        }
+        body.light-theme .theme-toggle-btn.on::after {
+            background: #ffffff;
         }
         body.light-theme .theme-toggle-btn:hover {
             border-color: #0284c7;
-            color: #0284c7;
         }
+
         body.light-theme .undo-btn {
             background-color: #e0e7ff;
             border-color: #c7d2fe;
@@ -313,9 +370,8 @@
         body.light-theme .order-chip.preparing {
             color: #334155;
         }
-        body.light-theme .order-chip.preparing .status-badge {
-            background: #94a3b8;
-            color: #0f172a;
+        body.light-theme .order-chip .order-divider {
+            border-top-color: rgba(100, 116, 139, 0.35);
         }
         body.light-theme .order-chip .item-row {
             color: #334155;
@@ -331,27 +387,6 @@
             from { opacity: 0; transform: scale(0.85); }
             to { opacity: 1; transform: scale(1); }
         }
-
-        /* Scrollbar styling */
-        .orders-grid::-webkit-scrollbar {
-            width: 8px;
-        }
-        .orders-grid::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .orders-grid::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 4px;
-        }
-        .orders-grid::-webkit-scrollbar-thumb:hover {
-            background: #475569;
-        }
-        body.light-theme .orders-grid::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-        }
-        body.light-theme .orders-grid::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
     </style>
 </head>
 <body>
@@ -362,23 +397,30 @@
             <div class="stat">In de keuken: <span class="stat-value" id="preparingCount">0</span></div>
             <div class="stat">In wachtrij: <span class="stat-value" id="queuedCount">0</span></div>
             <div class="grid-controls">
+                <label for="gridRows">Rijen:</label>
+                <select id="gridRows">
+                    <option value="1">1</option>
+                    <option value="2" selected>2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                </select>
                 <label for="gridColumns">Kolommen:</label>
                 <select id="gridColumns">
                     <option value="2">2</option>
                     <option value="3">3</option>
-                    <option value="4" selected>4</option>
-                    <option value="5">5</option>
+                    <option value="4">4</option>
+                    <option value="5" selected>5</option>
                     <option value="6">6</option>
-                    <option value="auto">Auto</option>
                 </select>
-                <button onclick="toggleLocalTheme()" id="localThemeBtn" class="theme-toggle-btn">Donker</button>
+                <span class="theme-icon" id="localThemeIcon">☾</span>
+                <button onclick="toggleLocalTheme()" id="localThemeBtn" class="theme-toggle-btn" aria-label="Thema"></button>
                 <button onclick="undoCompletion()" id="undoButton" class="undo-btn">↩ Ongedaan maken</button>
             </div>
         </div>
     </header>
 
     <main>
-        <div class="orders-grid cols-4" id="ordersGrid">
+        <div class="orders-grid" id="ordersGrid">
             <div class="empty-state" id="emptyState">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
@@ -391,6 +433,7 @@
     <script>
         const ordersGrid = document.getElementById('ordersGrid');
         const emptyState = document.getElementById('emptyState');
+        const gridRowsSelect = document.getElementById('gridRows');
         const gridColumnsSelect = document.getElementById('gridColumns');
         const preparingCount = document.getElementById('preparingCount');
         const queuedCount = document.getElementById('queuedCount');
@@ -402,36 +445,72 @@
         // Local kitchen theme (independent of the display theme)
         const savedLocalTheme = localStorage.getItem('kitchen_theme') || 'dark';
         document.body.classList.toggle('light-theme', savedLocalTheme === 'light');
-        document.getElementById('localThemeBtn').innerText = savedLocalTheme === 'light' ? 'Licht' : 'Donker';
+        document.getElementById('localThemeBtn').classList.toggle('on', savedLocalTheme === 'light');
+        updateThemeIcon(savedLocalTheme === 'light');
+
+        function updateThemeIcon(isLight) {
+            document.getElementById('localThemeIcon').textContent = isLight ? '☀' : '☾';
+        }
 
         function toggleLocalTheme() {
             const isLight = document.body.classList.contains('light-theme');
             const target = isLight ? 'dark' : 'light';
             document.body.classList.toggle('light-theme', target === 'light');
             localStorage.setItem('kitchen_theme', target);
-            document.getElementById('localThemeBtn').innerText = target === 'light' ? 'Licht' : 'Donker';
+            document.getElementById('localThemeBtn').classList.toggle('on', target === 'light');
+            updateThemeIcon(target === 'light');
         }
 
-        // Load saved grid preference
-        const savedColumns = localStorage.getItem('kitchenGridColumns');
-        if (savedColumns) {
-            gridColumnsSelect.value = savedColumns;
-            applyGridColumns(savedColumns);
-        }
+        // Load saved grid preference (rows + columns)
+        const savedRows = localStorage.getItem('kitchenGridRows') || '2';
+        const savedColumns = localStorage.getItem('kitchenGridColumns') || '5';
+        gridRowsSelect.value = savedRows;
+        gridColumnsSelect.value = savedColumns;
+        applyGrid();
 
-        gridColumnsSelect.addEventListener('change', (e) => {
-            const value = e.target.value;
-            localStorage.setItem('kitchenGridColumns', value);
-            applyGridColumns(value);
+        gridRowsSelect.addEventListener('change', () => {
+            localStorage.setItem('kitchenGridRows', gridRowsSelect.value);
+            applyGrid();
         });
 
-        function applyGridColumns(columns) {
-            ordersGrid.className = 'orders-grid';
-            if (columns === 'auto') {
-                ordersGrid.classList.add('cols-auto');
-            } else {
-                ordersGrid.classList.add(`cols-${columns}`);
+        gridColumnsSelect.addEventListener('change', () => {
+            localStorage.setItem('kitchenGridColumns', gridColumnsSelect.value);
+            applyGrid();
+        });
+
+        // Apply the grid dimensions and sync kitchen capacity to rows * columns
+        async function applyGrid() {
+            const rows = parseInt(gridRowsSelect.value, 10);
+            const cols = parseInt(gridColumnsSelect.value, 10);
+            ordersGrid.style.setProperty('--rows', rows);
+            ordersGrid.style.setProperty('--cols', cols);
+
+            // Recompute the text scale based on the new grid capacity
+            updateScale(rows * cols);
+
+            // Keep the kitchen capacity in sync with the visible grid slots
+            const capacity = rows * cols;
+            try {
+                await fetch('/api/kitchen/capacity', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ capacity })
+                });
+            } catch (e) {
+                console.error("Failed to sync kitchen capacity", e);
             }
+        }
+
+        // Scale the text based on how many orders fit on screen (grid capacity).
+        // Fewer slots -> bigger text; more slots -> smaller text.
+        function updateScale(slots) {
+            let scale;
+            if (slots <= 4) scale = 1.4;
+            else if (slots <= 6) scale = 1.2;
+            else if (slots <= 10) scale = 1;
+            else if (slots <= 16) scale = 0.8;
+            else scale = 0.65;
+            ordersGrid.style.setProperty('--order-scale', scale);
         }
 
         async function fetchOrders() {
@@ -441,14 +520,14 @@
 
                 // Track state changes to avoid unnecessary DOM refreshes
                 const currentStateString = JSON.stringify({
-                    p: data.pending
+                    p: data.preparing
                 });
 
                 if (currentStateString !== lastStateString) {
-                    preparingCount.textContent = data.pending.length;
+                    preparingCount.textContent = data.preparing.length;
                     queuedCount.textContent = data.queued.length;
 
-                    renderOrders(data.pending);
+                    renderOrders(data.preparing);
                     lastStateString = currentStateString;
                 }
             } catch (error) {
@@ -467,13 +546,21 @@
             emptyState.style.display = 'none';
             ordersGrid.innerHTML = '';
 
-            orders.forEach(order => {
+            orders.forEach((order, index) => {
                 const number = order.order || '?';
                 const items = order.items || [];
 
                 const div = document.createElement('div');
                 div.className = 'order-chip preparing';
                 div.dataset.order = number;
+
+                // Mark the oldest (first) and newest (last) order with FIFO arrows
+                if (index === 0) {
+                    div.classList.add('fifo-first');
+                }
+                if (index === orders.length - 1) {
+                    div.classList.add('fifo-last');
+                }
 
                 let itemsHtml = '';
                 if (items.length > 0) {
@@ -485,11 +572,13 @@
                 }
 
                 div.innerHTML = `
-                    <span class="status-badge">Maken</span>
                     <span class="order-number">${number}</span>
+                    <div class="order-divider"></div>
                     <div class="order-details">
                         ${itemsHtml}
                     </div>
+                    ${index === 0 ? '<span class="fifo-arrow">←</span>' : ''}
+                    ${index === orders.length - 1 ? '<span class="fifo-arrow">←</span>' : ''}
                 `;
 
                 // Tap to complete the order immediately
