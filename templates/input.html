@@ -112,6 +112,17 @@
         .btn-enter { background-color: #064e3b; color: #6ee7b7; border-color: #065f46; font-size: 1.3rem; }
         .btn-enter:hover { background-color: #065f46; }
         .btn-alpha { color: #38bdf8; border-color: #1e293b; } /* Custom highlight color for letters */
+
+        /* Undo knop - blijft klikbaar boven de pos-overlay */
+        .btn-undo {
+            background-color: #312e81;
+            color: #a5b4fc;
+            border-color: #3730a3;
+            font-size: 1.3rem;
+            z-index: 20;
+            position: relative;
+        }
+        .btn-undo:hover { background-color: #3730a3; color: white; }
         
         /* Grid Layout Configuration */
         .orders-grid {
@@ -136,6 +147,9 @@
         
         .preparing-btn { border-color: #b45309; color: #fbbf24; }
         .preparing-btn:hover { background: #78350f; }
+
+        .pending-btn { border-color: #3b82f6; color: #60a5fa; }
+        .pending-btn:hover { background: #1e3a8a; }
         
         .ready-btn { border-color: #047857; color: #34d399; }
         .ready-btn:hover { background: #064e3b; }
@@ -157,6 +171,12 @@
             z-index: 10;
             padding: 40px;
             box-sizing: border-box;
+            pointer-events: none; /* Laat muisklikken door naar de undo-knop */
+        }
+
+        /* Tekst in de overlay apart klikbaar maken of uitsluiten indien nodig */
+        .pos-overlay span {
+            pointer-events: auto;
         }
 
         /* ================= LIGHT MODE OVERRIDES ================= */
@@ -181,8 +201,12 @@
         body.light-theme .order-btn { background: #ffffff; }
         body.light-theme .preparing-btn { border-color: #f59e0b; color: #d97706; }
         body.light-theme .preparing-btn:hover { background: #fef3c7; }
+        body.light-theme .pending-btn { border-color: #3b82f6; color: #2563eb; }
+        body.light-theme .pending-btn:hover { background: #dbeafe; }
         body.light-theme .ready-btn { border-color: #10b981; color: #059669; }
         body.light-theme .ready-btn:hover { background: #d1fae5; }
+        body.light-theme .btn-undo { background-color: #e0e7ff; color: #3730a3; border-color: #c7d2fe; }
+        body.light-theme .btn-undo:hover { background-color: #c7d2fe; color: #1e1b4b; }
         
         body.light-theme .pos-overlay { background-color: rgba(255, 255, 255, 0.96); color: #64748b; }
     </style>
@@ -203,18 +227,22 @@
 
     <div class="left-panel">
         <div class="column-section">
-            <h2>Wordt gemaakt</h2>
+            <h2>Bestelling</h2>
             <div class="orders-grid" id="preparingOrders"></div>
         </div>
         <div class="column-section">
-            <h2>Klaar voor afhalen</h2>
+            <h2>Wordt gemaakt</h2>
+            <div class="orders-grid" id="pendingOrders"></div>
+        </div>
+        <div class="column-section">
+            <h2>Klaar</h2>
             <div class="orders-grid" id="readyOrders"></div>
         </div>
     </div>
 
     <div class="right-panel">
         <!-- Overlay container blocks keypads on POS interactions -->
-        <div class="pos-overlay" id="posOverlay">verbonden aan mosselpos</div>
+        <div class="pos-overlay" id="posOverlay"><span>verbonden aan mosselpos</span></div>
         
         <h2>Nieuwe Bestelling</h2>
         <input type="text" id="orderInput" readonly>
@@ -240,12 +268,15 @@
             <button class="btn" onclick="appendNum('0')">0</button>
             <button class="btn btn-enter" onclick="submitOrder()">Enter</button>
             <button class="btn btn-alpha" onclick="appendNum('D')">D</button>
+
+            <button class="btn btn-undo" id="undoBtn" onclick="undoAction()" style="grid-column: span 4;">⌫ UNDO</button>
         </div>
     </div>
 
     <script>
         const inputField = document.getElementById('orderInput');
         const preparingGrid = document.getElementById('preparingOrders');
+        const pendingGrid = document.getElementById('pendingOrders');
         const readyGrid = document.getElementById('readyOrders');
         const posOverlay = document.getElementById('posOverlay');
         
@@ -311,13 +342,24 @@
             fetchOrders();
         }
 
+        async function moveToPending(orderNum) {
+            await fetch(`/api/orders/${orderNum}/pending`, { method: 'PUT' });
+            fetchOrders();
+        }
+
         async function moveToReady(orderNum) {
             await fetch(`/api/orders/${orderNum}/ready`, { method: 'PUT' });
             fetchOrders();
         }
 
-        async function removeOrder(orderNum) {
-            await fetch(`/api/orders/${orderNum}`, { method: 'DELETE' });
+        async function pickupOrder(orderNum) {
+            await fetch(`/api/orders/${orderNum}/pickup`, { method: 'PUT' });
+            fetchOrders();
+        }
+
+        async function undoAction() {
+            // Undo mag ALTIJD gebruikt worden, ook al is POS verbonden
+            await fetch('/api/undo', { method: 'POST' });
             fetchOrders();
         }
 
@@ -332,23 +374,36 @@
                 remoteThemeState = data.display_theme;
                 document.getElementById('remoteThemeBtn').innerText = remoteThemeState === 'light' ? 'Licht' : 'Donker';
 
-                // Render preparing list
+                // Render preparing list (new incoming orders)
                 preparingGrid.innerHTML = '';
-                data.preparing.forEach(order => {
+                (data.preparing || []).forEach(order => {
+                    const num = order.order || order;
                     const btn = document.createElement('button');
                     btn.className = 'order-btn preparing-btn';
-                    btn.textContent = order;
-                    btn.onclick = () => moveToReady(order);
+                    btn.textContent = num;
+                    btn.onclick = () => moveToPending(num);
                     preparingGrid.appendChild(btn);
                 });
 
-                // Render ready list
+                // Render pending list (being made)
+                pendingGrid.innerHTML = '';
+                (data.pending || []).forEach(order => {
+                    const num = order.order || order;
+                    const btn = document.createElement('button');
+                    btn.className = 'order-btn pending-btn';
+                    btn.textContent = num;
+                    btn.onclick = () => moveToReady(num);
+                    pendingGrid.appendChild(btn);
+                });
+
+                // Render done (ready for pickup) list
                 readyGrid.innerHTML = '';
-                data.ready.forEach(order => {
+                (data.done || []).forEach(order => {
+                    const num = order.order || order;
                     const btn = document.createElement('button');
                     btn.className = 'order-btn ready-btn';
-                    btn.textContent = order;
-                    btn.onclick = () => removeOrder(order);
+                    btn.textContent = num;
+                    btn.onclick = () => pickupOrder(num);
                     readyGrid.appendChild(btn);
                 });
             } catch (e) {

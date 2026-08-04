@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keukenscherm - Bestellingen Overzicht</title>
+    <style>
+        body { 
+            background-color: #0f172a; /* Deep slate dark-mode */
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            margin: 0;
+            padding: 5vh 5vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            overflow: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .kitchen-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #1e293b;
+            transition: border-color 0.3s ease;
+        }
+
+        .kitchen-header h1 {
+            font-size: 28px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-weight: 700;
+            color: #38bdf8;
+            margin: 0;
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            color: #94a3b8;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .header-stats .stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .header-stats .stat-value {
+            color: #38bdf8;
+            font-weight: 800;
+        }
+
+        .grid-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .grid-controls label {
+            font-size: 14px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .grid-controls select {
+            background: #1e293b;
+            border: 2px solid #334155;
+            color: #f8fafc;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .grid-controls select:hover {
+            border-color: #38bdf8;
+        }
+
+        .grid-controls select:focus {
+            outline: none;
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+        }
+
+        .theme-toggle-btn {
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #cbd5e1;
+            padding: 8px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+        }
+
+        .theme-toggle-btn:hover {
+            border-color: #38bdf8;
+            color: #38bdf8;
+        }
+
+        .orders-grid {
+            flex: 1;
+            overflow-y: auto;
+            display: grid;
+            gap: 20px;
+            align-content: start;
+            padding-right: 8px;
+        }
+
+        /* Grid column configurations */
+        .orders-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+        .orders-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+        .orders-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+        .orders-grid.cols-5 { grid-template-columns: repeat(5, 1fr); }
+        .orders-grid.cols-6 { grid-template-columns: repeat(6, 1fr); }
+        .orders-grid.cols-auto { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+
+        /* Modern chip formatting derived from bingosoft */
+        .order-chip {
+            background: #1e293b;
+            border: 3px solid #334155;
+            font-weight: 800;
+            text-align: center;
+            border-radius: 24px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 180px;
+            padding: 24px 20px;
+            position: relative;
+        }
+
+        .order-chip:hover {
+            transform: scale(1.02);
+            border-color: #38bdf8;
+            box-shadow: 0 12px 28px rgba(56, 189, 248, 0.2);
+        }
+
+        .order-chip:active {
+            transform: scale(0.98);
+        }
+
+        .order-chip.preparing {
+            color: #cbd5e1;
+            font-size: 3.5rem;
+        }
+
+        .order-chip .status-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            opacity: 0.8;
+        }
+
+        .order-chip.preparing .status-badge {
+            background: #64748b;
+            color: #f8fafc;
+        }
+
+        .order-chip .order-number {
+            word-break: break-word;
+            line-height: 1.1;
+        }
+
+        .order-chip .order-details {
+            font-size: 1.3rem;
+            margin-top: 10px;
+            color: #a0aec0;
+            line-height: 1.4;
+            width: 100%;
+        }
+
+        .order-chip .item-row {
+            text-align: left;
+            padding: 3px 0;
+            font-weight: 600;
+            color: #cbd5e1;
+        }
+
+        .order-chip .item-row.muted {
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .order-chip .item-qty {
+            color: #38bdf8;
+            font-weight: 800;
+            margin-right: 6px;
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            color: #64748b;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        /* Minimal floating undo bar shown for 5s after completing an order */
+        .undo-bar {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid #38bdf8;
+            padding: 12px 20px;
+            border-radius: 30px;
+            display: none;
+            align-items: center;
+            gap: 14px;
+            color: #f8fafc;
+            font-size: 15px;
+            font-weight: 600;
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .undo-bar .undo-order {
+            color: #38bdf8;
+            font-weight: 800;
+        }
+
+        .undo-bar button {
+            background: #38bdf8;
+            color: #0f172a;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+        }
+
+        .undo-bar button:hover {
+            background: #7dd3fc;
+        }
+
+        /* ================= LIGHT MODE OVERRIDES ================= */
+        body.light-theme {
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        body.light-theme .kitchen-header {
+            border-bottom-color: #cbd5e1;
+        }
+        body.light-theme .kitchen-header h1 { color: #0284c7; }
+        body.light-theme .grid-controls label { color: #64748b; }
+        body.light-theme .header-stats { color: #64748b; }
+        body.light-theme .header-stats .stat-value { color: #0284c7; }
+        
+        body.light-theme .grid-controls select {
+            background: #ffffff;
+            border-color: #cbd5e1;
+            color: #0f172a;
+        }
+        body.light-theme .grid-controls select:hover {
+            border-color: #0284c7;
+        }
+        body.light-theme .grid-controls select:focus {
+            border-color: #0284c7;
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2);
+        }
+
+        body.light-theme .theme-toggle-btn {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+            color: #334155;
+        }
+        body.light-theme .theme-toggle-btn:hover {
+            border-color: #0284c7;
+            color: #0284c7;
+        }
+
+        body.light-theme .order-chip {
+            background: #ffffff;
+            border-color: #cbd5e1;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.05);
+        }
+        body.light-theme .order-chip:hover {
+            border-color: #0284c7;
+            box-shadow: 0 8px 20px rgba(2, 132, 199, 0.15);
+        }
+        body.light-theme .order-chip.preparing {
+            color: #334155;
+        }
+        body.light-theme .order-chip.preparing .status-badge {
+            background: #94a3b8;
+            color: #0f172a;
+        }
+        body.light-theme .order-chip .item-row {
+            color: #334155;
+        }
+        body.light-theme .order-chip .item-qty {
+            color: #0284c7;
+        }
+        body.light-theme .empty-state {
+            color: #94a3b8;
+        }
+        body.light-theme .undo-bar {
+            background: rgba(255, 255, 255, 0.97);
+            border-color: #0284c7;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        body.light-theme .undo-bar .undo-order {
+            color: #0284c7;
+        }
+        body.light-theme .undo-bar button {
+            background: #0284c7;
+            color: #f8fafc;
+        }
+        body.light-theme .undo-bar button:hover {
+            background: #0ea5e9;
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.85); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Scrollbar styling */
+        .orders-grid::-webkit-scrollbar {
+            width: 8px;
+        }
+        .orders-grid::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .orders-grid::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        .orders-grid::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        body.light-theme .orders-grid::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+        }
+        body.light-theme .orders-grid::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="kitchen-header">
+        <h1>Keuken Overzicht</h1>
+        <div class="header-stats">
+            <div class="stat">In de keuken: <span class="stat-value" id="preparingCount">0</span></div>
+            <div class="stat">In wachtrij: <span class="stat-value" id="queuedCount">0</span></div>
+            <div class="grid-controls">
+                <label for="gridColumns">Kolommen:</label>
+                <select id="gridColumns">
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4" selected>4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="auto">Auto</option>
+                </select>
+                <button onclick="toggleLocalTheme()" id="localThemeBtn" class="theme-toggle-btn">Donker</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="orders-grid cols-4" id="ordersGrid">
+            <div class="empty-state" id="emptyState">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                </svg>
+                <p>Geen bestellingen</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Minimal undo bar shown for 5s after completing an order -->
+    <div class="undo-bar" id="undoBar">
+        <span>Bestelling <span class="undo-order" id="undoOrder">—</span> afgerond</span>
+        <button id="undoButton">Ongedaan maken</button>
+    </div>
+
+    <script>
+        const ordersGrid = document.getElementById('ordersGrid');
+        const emptyState = document.getElementById('emptyState');
+        const gridColumnsSelect = document.getElementById('gridColumns');
+        const preparingCount = document.getElementById('preparingCount');
+        const queuedCount = document.getElementById('queuedCount');
+
+        const undoBar = document.getElementById('undoBar');
+        const undoOrder = document.getElementById('undoOrder');
+        const undoButton = document.getElementById('undoButton');
+
+        let lastStateString = "";
+        let currentUndoOrder = null;
+        let undoTimeout = null;
+
+        // Local kitchen theme (independent of the display theme)
+        const savedLocalTheme = localStorage.getItem('kitchen_theme') || 'dark';
+        document.body.classList.toggle('light-theme', savedLocalTheme === 'light');
+        document.getElementById('localThemeBtn').innerText = savedLocalTheme === 'light' ? 'Licht' : 'Donker';
+
+        function toggleLocalTheme() {
+            const isLight = document.body.classList.contains('light-theme');
+            const target = isLight ? 'dark' : 'light';
+            document.body.classList.toggle('light-theme', target === 'light');
+            localStorage.setItem('kitchen_theme', target);
+            document.getElementById('localThemeBtn').innerText = target === 'light' ? 'Licht' : 'Donker';
+        }
+
+        // Load saved grid preference
+        const savedColumns = localStorage.getItem('kitchenGridColumns');
+        if (savedColumns) {
+            gridColumnsSelect.value = savedColumns;
+            applyGridColumns(savedColumns);
+        }
+
+        gridColumnsSelect.addEventListener('change', (e) => {
+            const value = e.target.value;
+            localStorage.setItem('kitchenGridColumns', value);
+            applyGridColumns(value);
+        });
+
+        function applyGridColumns(columns) {
+            ordersGrid.className = 'orders-grid';
+            if (columns === 'auto') {
+                ordersGrid.classList.add('cols-auto');
+            } else {
+                ordersGrid.classList.add(`cols-${columns}`);
+            }
+        }
+
+        async function fetchOrders() {
+            try {
+                const res = await fetch('/api/orders');
+                const data = await res.json();
+
+                // Track state changes to avoid unnecessary DOM refreshes
+                const currentStateString = JSON.stringify({
+                    p: data.pending
+                });
+
+                if (currentStateString !== lastStateString) {
+                    preparingCount.textContent = data.pending.length;
+                    queuedCount.textContent = data.queued.length;
+
+                    renderOrders(data.pending);
+                    lastStateString = currentStateString;
+                }
+            } catch (error) {
+                console.error("Connection lost...");
+            }
+        }
+
+        function renderOrders(orders) {
+            if (orders.length === 0) {
+                ordersGrid.innerHTML = '';
+                ordersGrid.appendChild(emptyState);
+                emptyState.style.display = 'flex';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            ordersGrid.innerHTML = '';
+
+            orders.forEach(order => {
+                const number = order.order || '?';
+                const items = order.items || [];
+
+                const div = document.createElement('div');
+                div.className = 'order-chip preparing';
+                div.dataset.order = number;
+
+                let itemsHtml = '';
+                if (items.length > 0) {
+                    itemsHtml = items.map(i =>
+                        `<div class="item-row"><span class="item-qty">${i.qty}×</span> ${i.name}</div>`
+                    ).join('');
+                } else {
+                    itemsHtml = '<div class="item-row muted">Geen items</div>';
+                }
+
+                div.innerHTML = `
+                    <span class="status-badge">Maken</span>
+                    <span class="order-number">${number}</span>
+                    <div class="order-details">
+                        ${itemsHtml}
+                    </div>
+                `;
+
+                // Tap to complete the order immediately
+                div.addEventListener('click', () => completeOrder(div, number));
+
+                ordersGrid.appendChild(div);
+            });
+        }
+
+        async function completeOrder(element, orderId) {
+            try {
+                const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}/done`, {
+                    method: 'PUT'
+                });
+                if (!res.ok) {
+                    throw new Error('Failed to complete order');
+                }
+                // Show the undo bar with a 5 second grace period
+                showUndo(orderId);
+                // The next fetch cycle removes the order and promotes the next queued one
+            } catch (error) {
+                console.error("Failed to complete order:", error);
+            }
+        }
+
+        function showUndo(orderId) {
+            undoOrder.textContent = orderId;
+            undoBar.style.display = 'flex';
+            currentUndoOrder = orderId;
+
+            if (undoTimeout) clearTimeout(undoTimeout);
+            undoTimeout = setTimeout(() => {
+                hideUndo();
+            }, 5000);
+        }
+
+        async function undoCompletion() {
+            const orderId = currentUndoOrder;
+            hideUndo();
+            if (!orderId) return;
+
+            try {
+                const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}/undo`, {
+                    method: 'PUT'
+                });
+                if (!res.ok) {
+                    throw new Error('Failed to undo');
+                }
+                // The next fetch cycle brings the order back to preparing
+            } catch (error) {
+                console.error("Failed to undo completion:", error);
+            }
+        }
+
+        function hideUndo() {
+            undoBar.style.display = 'none';
+            currentUndoOrder = null;
+            if (undoTimeout) {
+                clearTimeout(undoTimeout);
+                undoTimeout = null;
+            }
+        }
+
+        undoButton.addEventListener('click', undoCompletion);
+
+        setInterval(fetchOrders, 1000);
+        fetchOrders();
+    </script>
+</body>
+</html>

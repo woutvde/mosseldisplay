@@ -77,6 +77,10 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.15);
             animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
             transition: all 0.3s ease;
+            box-sizing: border-box;
+            overflow: hidden;
+            word-break: break-word;
+            white-space: normal;
         }
 
         .order-chip.preparing {
@@ -154,8 +158,8 @@
                 
                 // Track state changes to avoid unnecessary DOM refreshes
                 const currentStateString = JSON.stringify({
-                    p: data.preparing, 
-                    r: data.ready, 
+                    p: data.pending, 
+                    r: data.done, 
                     t: data.display_theme
                 });
                 
@@ -163,21 +167,21 @@
                     // Update remote synchronization theme
                     document.body.classList.toggle('light-theme', data.display_theme === 'light');
                     
-                    // Render preparing list
+                    // Render pending list (being made)
                     preparingGrid.innerHTML = '';
-                    data.preparing.forEach(order => {
+                    (data.pending || []).forEach(order => {
                         const div = document.createElement('div');
                         div.className = 'order-chip preparing';
-                        div.textContent = order;
+                        div.textContent = order.order || order;
                         preparingGrid.appendChild(div);
                     });
 
-                    // Render ready list
+                    // Render done (ready for pickup) list
                     readyGrid.innerHTML = '';
-                    data.ready.forEach(order => {
+                    (data.done || []).forEach(order => {
                         const div = document.createElement('div');
                         div.className = 'order-chip ready';
-                        div.textContent = order;
+                        div.textContent = order.order || order;
                         readyGrid.appendChild(div);
                     });
 
