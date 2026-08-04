@@ -111,6 +111,24 @@
             color: #38bdf8;
         }
 
+        .undo-btn {
+            background: #312e81;
+            border: 1px solid #3730a3;
+            color: #a5b4fc;
+            padding: 8px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+        }
+
+        .undo-btn:hover {
+            background: #3730a3;
+            color: white;
+        }
+
         .orders-grid {
             flex: 1;
             overflow-y: auto;
@@ -238,49 +256,6 @@
             margin: 0;
         }
 
-        /* Minimal floating undo bar shown for 5s after completing an order */
-        .undo-bar {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(15, 23, 42, 0.95);
-            border: 1px solid #38bdf8;
-            padding: 12px 20px;
-            border-radius: 30px;
-            display: none;
-            align-items: center;
-            gap: 14px;
-            color: #f8fafc;
-            font-size: 15px;
-            font-weight: 600;
-            z-index: 100;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-            animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
-
-        .undo-bar .undo-order {
-            color: #38bdf8;
-            font-weight: 800;
-        }
-
-        .undo-bar button {
-            background: #38bdf8;
-            color: #0f172a;
-            border: none;
-            padding: 8px 18px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 800;
-            text-transform: uppercase;
-            transition: all 0.2s ease;
-        }
-
-        .undo-bar button:hover {
-            background: #7dd3fc;
-        }
-
         /* ================= LIGHT MODE OVERRIDES ================= */
         body.light-theme {
             background-color: #f8fafc;
@@ -316,6 +291,15 @@
             border-color: #0284c7;
             color: #0284c7;
         }
+        body.light-theme .undo-btn {
+            background-color: #e0e7ff;
+            border-color: #c7d2fe;
+            color: #3730a3;
+        }
+        body.light-theme .undo-btn:hover {
+            background-color: #c7d2fe;
+            color: #1e1b4b;
+        }
 
         body.light-theme .order-chip {
             background: #ffffff;
@@ -341,21 +325,6 @@
         }
         body.light-theme .empty-state {
             color: #94a3b8;
-        }
-        body.light-theme .undo-bar {
-            background: rgba(255, 255, 255, 0.97);
-            border-color: #0284c7;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-        body.light-theme .undo-bar .undo-order {
-            color: #0284c7;
-        }
-        body.light-theme .undo-bar button {
-            background: #0284c7;
-            color: #f8fafc;
-        }
-        body.light-theme .undo-bar button:hover {
-            background: #0ea5e9;
         }
 
         @keyframes popIn {
@@ -403,6 +372,7 @@
                     <option value="auto">Auto</option>
                 </select>
                 <button onclick="toggleLocalTheme()" id="localThemeBtn" class="theme-toggle-btn">Donker</button>
+                <button onclick="undoCompletion()" id="undoButton" class="undo-btn">↩ Ongedaan maken</button>
             </div>
         </div>
     </header>
@@ -418,12 +388,6 @@
         </div>
     </main>
 
-    <!-- Minimal undo bar shown for 5s after completing an order -->
-    <div class="undo-bar" id="undoBar">
-        <span>Bestelling <span class="undo-order" id="undoOrder">—</span> afgerond</span>
-        <button id="undoButton">Ongedaan maken</button>
-    </div>
-
     <script>
         const ordersGrid = document.getElementById('ordersGrid');
         const emptyState = document.getElementById('emptyState');
@@ -431,13 +395,9 @@
         const preparingCount = document.getElementById('preparingCount');
         const queuedCount = document.getElementById('queuedCount');
 
-        const undoBar = document.getElementById('undoBar');
-        const undoOrder = document.getElementById('undoOrder');
         const undoButton = document.getElementById('undoButton');
 
         let lastStateString = "";
-        let currentUndoOrder = null;
-        let undoTimeout = null;
 
         // Local kitchen theme (independent of the display theme)
         const savedLocalTheme = localStorage.getItem('kitchen_theme') || 'dark';
@@ -547,49 +507,21 @@
                 if (!res.ok) {
                     throw new Error('Failed to complete order');
                 }
-                // Show the undo bar with a 5 second grace period
-                showUndo(orderId);
                 // The next fetch cycle removes the order and promotes the next queued one
             } catch (error) {
                 console.error("Failed to complete order:", error);
             }
         }
 
-        function showUndo(orderId) {
-            undoOrder.textContent = orderId;
-            undoBar.style.display = 'flex';
-            currentUndoOrder = orderId;
-
-            if (undoTimeout) clearTimeout(undoTimeout);
-            undoTimeout = setTimeout(() => {
-                hideUndo();
-            }, 5000);
-        }
-
         async function undoCompletion() {
-            const orderId = currentUndoOrder;
-            hideUndo();
-            if (!orderId) return;
-
             try {
-                const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}/undo`, {
-                    method: 'PUT'
-                });
+                const res = await fetch('/api/undo', { method: 'POST' });
                 if (!res.ok) {
                     throw new Error('Failed to undo');
                 }
-                // The next fetch cycle brings the order back to preparing
+                // The next fetch cycle restores the last order
             } catch (error) {
                 console.error("Failed to undo completion:", error);
-            }
-        }
-
-        function hideUndo() {
-            undoBar.style.display = 'none';
-            currentUndoOrder = null;
-            if (undoTimeout) {
-                clearTimeout(undoTimeout);
-                undoTimeout = null;
             }
         }
 
